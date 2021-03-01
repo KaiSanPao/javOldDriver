@@ -263,6 +263,7 @@
                 p.then(imgUrl => {
                     if (imgUrl !== null){
                         let p = request(imgUrl,"",10000);
+                        console.log("等待blogjav获取的图片  10000ms");
                         p.then((result) => {
                             if (result.loadstuts && result.finalUrl.search(/removed.png/i) < 0){
                                 GM_deleteValue(`temp_img_url_${avid}`);
@@ -307,13 +308,18 @@
                 let promise1 =  request('http://blogjav.net/?s=' + avid, "",15000);
                 promise1.then((result) => {
                     return new Promise(resolve => {
+                        console.log("FromBlogjav: result.loadstuts页面加载状态:" + result.loadstuts);
                         if(!result.loadstuts){
                             console.log("blogjav查找番号出错");
                             resolve(null);
                         }
                         var doc = Common.parsetext(result.responseText);
-                        let a_array = $(doc).find(".entry-title a");
+                        //let a_array = $(doc).find(".more-link");//老
+                        //let a_array = $(doc).find(".entry-title a");//3.3.5新-已无效
+                        //let a_array = $(doc).find(`a[rel*='bookmark'i]`);//自改-已无效
+                        let a_array = $(doc).find(`a[title*='`+avid+`'i]`);//自改新
                         let a = a_array[0];
+                        console.log("FromBlogjav: a_array.length查找到的链接数:" + a_array.length);
                         //如果找到全高清大图优先获取全高清的
                         for (let i = 0; i < a_array.length; i++) {
                             var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
@@ -322,6 +328,7 @@
                                 break;
                             }
                         }
+                        console.log("FromBlogjav: a所取的链接:" + a);
                         resolve(a);
                     });
                 }).then(a => {
@@ -334,7 +341,8 @@
                                 return new Promise(resolve => {
                                     if(!result.loadstuts)  resolve(null);
                                     let doc = Common.parsetext(result.responseText);
-                                    let img_array = $(doc).find('.entry-content a img[src*="pixhost."]');
+                                    //let img_array = $(doc).find('.entry-content a img[src*="pixhost."]');//3.3.5新-已无效
+                                    let img_array = $(doc).find('a img[src*="pixhost."]');//自改
 
                                     //如果找到内容大图
                                     if (img_array.length > 0) {
@@ -348,6 +356,7 @@
                                             resolve(targetImgUrl);
                                         }
                                     }
+                                    resolve(null);//当Blogjav没预览图时不返回不会调备用预览图
                                 });
                             }).then( imgUrl => {
                                 resolve(imgUrl);
